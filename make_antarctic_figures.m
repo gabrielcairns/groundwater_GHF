@@ -43,7 +43,8 @@ x_g = x_g/1000;
 y_g = y_g/1000;
 
 % Values of storage / permeability
-Ss_L = 1e-5;
+%Ss_L = 1e-5;
+Ss_L = 3e-5;
 K_sb_L = 1e-6;
 kappa = scales.Ksb_to_kappa*K_sb_L;
 Sigma = scales.Ss_to_Sigma*Ss_L;
@@ -96,7 +97,7 @@ b = smoothdata2(b,"gaussian",5);
 Hi = smoothdata2(Hi,"gaussian",5);
 
 % Reading and regridding mass change data
-BB = geotiffinfo('ais_dmdt_grounded_filt.tif').BoundingBox;
+BB = geotiffinfo('dmdt/ais_dmdt_grounded_filt.tif').BoundingBox;
 dHidt = flip(readgeoraster('ais_dmdt_grounded_filt.tif'));
 [meshX, meshY] = meshgrid(linspace(BB(1,1), BB(2,1), size(dHidt,2)),linspace(BB(1,2), BB(2,2), size(dHidt,1)));
 dHidt = interp2(meshX,meshY,dHidt,XX,YY);
@@ -137,7 +138,7 @@ title(asb,'Sedimentary basin thickness $H_{sb}$','FontSize',14,'Interpreter','la
 make_nice_colorbar(asb,'EastOutside','$H_{sb}$ / m');
 contourf(asb,xdkm*XX_,xdkm*YY_,scales.Hd*Hsb_,0:250:6000,'EdgeColor','none');
 text(asb,2400,2000,'(b)','BackgroundColor','w','FontSize',14,'Interpreter','latex')
-[psix_, psiy_] = gradient(((1-params.delta)*Hi*0.9+b)/scales.Hd,20/scales.xdkm);
+[psix_, psiy_] = gradient(((1-params.delta)*(1-params.nu)*Hi+b)/scales.Hd,20/scales.xdkm);
 plot(asb,x_g, y_g, 'k', 'linewidth',1);
 hatch_frozen(asb);
 
@@ -161,12 +162,12 @@ mod_T_(~grounded_mask)=nan;
 qET_ = Fxx_ + Fyy_;
 qET_(~grounded_mask)=nan;
 
-% Compaction
-qEC_ = -Hsb_.*dHidt_ ;
-mod_C_ = -0.5*Hsb_.^2.*G_.*dHidt_ ;
+% Poroelasticity
+qEC_ = -Hsb_.*dHidt_*(1-params.xi-params.nu)*(1-params.delta) ;
+mod_C_ = -0.5*Hsb_.^2.*G_.*dHidt_*(1-params.xi-params.nu)*(1-params.delta) ;
 
 % Figure 5: (a) Total heat flux modification compared with (b) G (c)
-% topographic term (d) compaction term
+% topographic term (d) poroelastic term
 figure(5); clf; set(gcf(),'color','w','Position',[120 160 1200 1070]);
 tiledlayout(2,2,'TileSpacing','Compact','Padding','compact');
 nexttile; ab1 = set_up_axes(gca(),'balance','(a)');
@@ -190,7 +191,7 @@ add_location_labels(ab3,xlims,ylims);
 
 title(ab1,'Total','FontSize',16,'Interpreter','latex','FontWeight','bold')
 title(ab2,'Topographic','FontSize',16,'Interpreter','latex','FontWeight','bold')
-title(ab3,'Compaction','FontSize',16,'Interpreter','latex','FontWeight','bold')
+title(ab3,'Poroelastic','FontSize',16,'Interpreter','latex','FontWeight','bold')
 
 % Drawing circle around ICESAT data gap
 rectangle(ab3,'Position',xdkm*[-.86 -.86 1.76 1.76],'Curvature',1,'LineStyle','--','linewidth',1.5)
@@ -238,6 +239,7 @@ clim(aLam,[0 1.5]);
 make_nice_colorbar(aLam,'EastOutside','');
 hatch_frozen(aLam);
 title(aLam,'$\Lambda = c_p G H_{sb} / k_{sb} L$','FontSize',16,'Interpreter','latex','FontWeight','bold');
+add_location_labels(aLam,xlims,ylims);
 
 % Reading MEaSUREs velocity data
 skip = 5;
@@ -258,7 +260,8 @@ regional_plots([-1800 -200],[-1300 300],'(c)');
 
 % 6(b) Coats land
 figure(3); clf; set(gcf(),'color','w','Position',[1 1 1600 600]);     
-regional_plots([-700 500],[400 1600],'(b)');
+%regional_plots([-700 500],[400 1600],'(b)');
+regional_plots([-900 700],[0 1600],'(b)');
 
 % 6(a) Wilkes / Aurora 
 figure(4); clf; set(gcf(),'color','w','Position',[1 1 1600 600]);     
@@ -282,7 +285,7 @@ rectangle(aHt,'Position',xdkm*[-.86 -.86 1.76 1.76],'Curvature',1,'LineStyle','-
         
         % Custom function for consistent style
         make_nice_axes(ax,'','');
-        set(ax,'FontSize',12);
+        set(ax,'FontSize',14);
         
         % Make geographically accurate
         axis equal 
@@ -292,8 +295,8 @@ rectangle(aHt,'Position',xdkm*[-.86 -.86 1.76 1.76],'Curvature',1,'LineStyle','-
         ylim(ax,ylims);
 
         % Axis label
-        xlabel(ax,'$x$ / km','FontSize',12,'Interpreter','latex');
-        ylabel(ax,'$y$ / km','FontSize',12,'Interpreter','latex');
+        xlabel(ax,'$x$ / km','FontSize',14,'Interpreter','latex');
+        ylabel(ax,'$y$ / km','FontSize',14,'Interpreter','latex');
 
         % Specified colormap
         colormap(ax,cmocean(clrmap))
@@ -319,11 +322,17 @@ rectangle(aHt,'Position',xdkm*[-.86 -.86 1.76 1.76],'Curvature',1,'LineStyle','-
         nexttile; abr = make_nice_axes(gca(),'','',  '$b$'); axis equal;
         nexttile; avr = make_nice_axes(gca(),'','', '$|u_i|$'); axis equal;
 
-        set(amr,'FontSize',14);
-        set(aGr,'FontSize',14);
-        set(aHsbr,'FontSize',14);
-        set(abr,'FontSize',14);
-        set(avr,'FontSize',14);
+        aIns =  axes('Position',[0.34 0.12 0.06 0.15]); hold on; axis equal; box on;
+        set(aIns,'xticklabels','','xtick', '','yticklabels','','ytick', '');
+        xlim(aIns,xlims); ylim(aIns,ylims); 
+        plot(aIns,x_g,y_g,'k','LineWidth',1);
+        rectangle(aIns,'Position',[ xlimsR(1) ylimsR(1)  xlimsR(2)-xlimsR(1) ylimsR(2)-ylimsR(1) ],'EdgeColor','r','FaceColor','none','Linewidth',1);
+
+        set(amr,'FontSize',16);
+        set(aGr,'FontSize',16);
+        set(aHsbr,'FontSize',16);
+        set(abr,'FontSize',16);
+        set(avr,'FontSize',16);
     
         xlim(amr,xlimsR);    ylim(amr,ylimsR);
         xlim(aGr,xlimsR);    ylim(aGr,ylimsR);
@@ -390,12 +399,13 @@ rectangle(aHt,'Position',xdkm*[-.86 -.86 1.76 1.76],'Curvature',1,'LineStyle','-
         
         % Locations for text so they don't clutter map 
         textloc = [-1200 1600; 2000 -2000; 2200 -1300; -400 -1000; -2200 -1100 ; -1600 -1500;-1300 1200; 2200 600];
+        lineendloc = [-1100 1450; 2000 -2000; 2200 -1300; -300 -900; -2100 -950 ; -1500 -1350;-1200 1050; 2200 600];
 
         % Add text label and draw a line from label to location
         for l = 1:length(locnames)
             loc = scarloc(locnames{l},'xy','km');
             if isbetween(loc(1),xlims(1),xlims(2)) && isbetween(loc(2),ylims(1),ylims(2))
-                plot(ax, [loc(1) textloc(l,1)], [loc(2) textloc(l,2)] ,'k','linewidth',1);
+                plot(ax, [loc(1) lineendloc(l,1)], [loc(2) lineendloc(l,2)] ,'k','linewidth',1);
                 text(ax,textloc(l,1),textloc(l,2),locabbrv{l},'FontSize',16,'Interpreter','latex'); 
             end
         end

@@ -52,7 +52,8 @@ elseif isequal(case_to_test,'alt')
     Gf = @(x) (0.06/scales.Gd)*(1 + .5*exp(- ((x-.9)/.1).^2 ));
 end
 % Thinning rate
-psit = -(1/0.3)*ones(size(x));
+%psict = -(1/0.3)*ones(size(x));
+psict = (1-params.xi-params.nu)*(1-params.delta) * ( -(1/0.3));
 
 G = Gf(x);    Hsb = Hsbf(x);
 b = bedf(x);
@@ -86,7 +87,7 @@ for K_sb = Ksbs(2:end)
 end
 
 % Likewise for different values of Ss
-Sss = [0 3e-7 1e-6 3e-6];
+Sss = [0 3e-6 1e-5 3e-5];
 for Ss = Sss
     filename = sprintf('test_case/%s_Ksb_%g_Ss_%g.mat',name_part,Ksbp,Ss);
     if ~isfile(filename)
@@ -126,7 +127,7 @@ for l = 1:length(Sss)
 end
 
 % Hydraulic potential
-psi = psi_Shr-0.1*(1-delta)*Hi;
+psi = psi_Shr-params.nu*(1-delta)*Hi;
 plot(aT,xdkm*xg*XH, Hd*psi, 'k-' , 'LineWidth',2);
 
 % Ice surface
@@ -215,7 +216,7 @@ for l = 1:length(Sss)
 
     corrflux =  0.5*Pe*G.*Hsb.^2.*psix;
 
-    F_sb_asymp = G+gradient(corrflux,x) - 0.5*Pe*zeta*G.*Hsb.^2.*psit;
+    F_sb_asymp = G+gradient(corrflux,x) - 0.5*Pe*zeta*G.*Hsb.^2.*psict;
 
     plot(aG2,xdkm*xg*XH,1000*Gd*F_sb,'-','Color',clrs2(l,:),'LineWidth',2);
     plot(aG2,xdkm*xg*XH,1000*Gd*F_sb_asymp,'--','Color',clrs2(l,:),'LineWidth',2);
@@ -229,4 +230,4 @@ legend(aG2,aG2.Children(end:-2:2),legtext2,'fontsize',14,'interpreter','latex','
 text(aG2,510,100,Ksb_text{1},'FontSize',14, 'Interpreter','latex');
 % Subplot labels
 text(aG1,680,92,'(a)','BackgroundColor','w','FontSize',14,'Interpreter','latex');
-text(aG2,680,105,'(b)','BackgroundColor','w','FontSize',14,'Interpreter','latex');
+text(aG2,680,115,'(b)','BackgroundColor','w','FontSize',14,'Interpreter','latex');

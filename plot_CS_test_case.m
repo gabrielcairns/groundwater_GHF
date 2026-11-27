@@ -23,7 +23,7 @@ bedf = @(x) -(1000/Hd)*sin(pi*x/.5);
 bedxf = @(x) -(pi/.4)*(1000/Hd)*cos(pi*x/.5);
 Hsbf= @(x) (2000/Hd)*(.5 + .5*tanh( (x-.05)/.05).*tanh( (.45-x)/.05)) ;
 Gf = @(x) (0.08/scales.Gd)*ones(size(x));
-psit = zeros(size(x));
+%psit = zeros(size(x));
 
 G = Gf(x);
 Hsb = Hsbf(x);
@@ -36,10 +36,10 @@ Hi = (1000/Hd)-b;
 psi_Shr = (1-delta)*Hi + b;
 
 % Creation of unmodified case
-if ~isfile('test_case/test_CS_Ksb_0.mat')
+if ~isfile('test_case/test_CS_Ksb_0_Ss_0.mat')
     F_sb = G;
     Tsb = -G.*Hsb.*(ZZ-1);
-    save('test_case/test_CS_Ksb_0.mat',"F_sb","Tsb");
+    save('test_case/test_CS_Ksb_0_Ss_0.mat',"F_sb","Tsb");
 end
 
 % Values of Ksb to calculate
@@ -53,7 +53,7 @@ Pes = params.St*scales.Ksb_to_kappa*Ksbs;
 for K_sb = Ksbs(2:end)
 
     % If the solution isn't already saved, we generate and save it
-    filename = sprintf('test_case/test_CS_Ksb_%g.mat',K_sb);
+    filename = sprintf('test_case/test_CS_Ksb_%g_Ss_0.mat',K_sb);
     if ~isfile(filename)
         [Tsb,F_sb,converged] = test_case(K_sb,0,'CS');
         save(filename,"Tsb","F_sb");
@@ -61,19 +61,40 @@ for K_sb = Ksbs(2:end)
 
 end
 
-% Initialisation of figure
-figure(1); clf; set(gcf(),'Position',[100  100  1075  775])
-tiledlayout(3,1)
-nexttile([2 1]);
-aT = make_nice_axes(gca(), '', '$z$ / m');  nexttile;
-aF = make_nice_axes(gca(), '$y$ / km', '$-k_{sb}\partial T/ \partial z$ / mW m$^{-2}$');  %nexttile;
+Sss = [0 3e-6 1e-5 3e-5];
+for Ss = Sss
+    filename = sprintf('test_case/test_CS_Ksb_%g_Ss_%g.mat',Ksbp,Ss);
+    if ~isfile(filename)
+        [Tsb,F_sb,converged] = test_case(Ksbp,Ss,'CS');
+        save(filename,"Tsb","F_sb");
+    end 
+end
 
+% Initialisation of figure
+% figure(1); clf; set(gcf(),'Position',[100  100  1075  775])
+% tiledlayout(3,1)
+% nexttile([2 1]);
+% aT = make_nice_axes(gca(), '', '$z$ / m');  nexttile;
+% aF = make_nice_axes(gca(), '$y$ / km', '$-k_{sb}\partial T/ \partial z$ / mW m$^{-2}$');  %nexttile;
+% 
+% xlim(aT,[0 xdkm*xg]);   colormap(aT,cmocean('thermal'));    aT.XTickLabels = {};
+% xlim(aF,[0 xdkm*xg]); 
+
+figure(1); clf; set(gcf(),'Position',[370 130 1130 1000])
+tiledlayout(4,1,'TileSpacing','Compact','Padding','compact');
+nexttile(1,[2 1]);
+aT = make_nice_axes(gca(), '', '$z$ / m');  nexttile;
+aF1 = make_nice_axes(gca(), '', '$-k_{sb}\partial T/ \partial z$ / mW m$^{-2}$');  nexttile;
+aF2 = make_nice_axes(gca(), '$x$ / km', '$-k_{sb}\partial T/ \partial z$ / mW m$^{-2}$'); 
 xlim(aT,[0 xdkm*xg]);   colormap(aT,cmocean('thermal'));    aT.XTickLabels = {};
-xlim(aF,[0 xdkm*xg]); 
+xlim(aF1,[0 xdkm*xg]);   aF1.XTickLabels = {};
+xlim(aF2,[0 xdkm*xg]);
 
 L = length(Ksbs);
 clrs = cmocean('haline',L+2);
 clrs = clrs([1 3:L+1],:);
+
+clrs2 = cmocean('ice',length(Sss)+2);
 
 % Plot of bed
 plot(aT,xdkm*xg*XH, Hd* b, 'k', 'LineWidth',2);
@@ -81,16 +102,23 @@ plot(aT,xdkm*xg*XH, Hd* b, 'k', 'LineWidth',2);
 % Plot of heat flux in each case
 for l = 1:L
     load(sprintf('test_case/test_CS_Ksb_%g.mat',Ksbs(l)),"F_sb");    
-    plot(aF,xdkm*xg*XH, 1000*Gd*F_sb, 'LineWidth',2, 'Color',clrs(l,:));
+    plot(aF1,xdkm*xg*XH, 1000*Gd*F_sb, 'LineWidth',2, 'Color',clrs(l,:));
 end
+
+for l = 1:length(Sss)
+    load(sprintf('test_case/test_CS_Ksb_1e-06_Ss_%g.mat',Sss(l)),"F_sb");
+    plot(aF2,xdkm*xg*XH, 1000*Gd*F_sb, 'LineWidth',2, 'Color',clrs2(l,:));
+end
+
 
 % Hydraulic potential
 psi = psi_Shr- .1*(1-delta)*Hi;
-plot(aT,xdkm*xg*XH, Hd*psi, 'k-' , 'LineWidth',2);
+ppsi = plot(aT,xdkm*xg*XH, Hd*psi, 'k-' , 'LineWidth',2);
 
 % Ice surface
-plot(aT,xdkm*xg*XH, Hd*(Hi+ b), 'k--', 'LineWidth',2);
-ylim(aF,[30 130]);
+pIS = plot(aT,xdkm*xg*XH, Hd*(Hi+ b), 'k--', 'LineWidth',2);
+ylim(aF1,[40 140]);
+ylim(aF2,[60 180]);
 
 % Particular solution for temperature 
 load(sprintf('test_case/test_CS_Ksb_%g.mat',3e-6),"Tsb");
@@ -100,7 +128,7 @@ ylim(aT, [-3100 1100])
 
 % Colorbar
 cb = make_nice_colorbar(aT,'east','$T$ / $^o$C');
-cb.Position =[0.8800 0.4200 0.0200 0.2000];
+cb.Position =[0.9100 0.5400 0.0200 0.2000];
 
 % Velocity streamlines
 u1 = -gradient(psi,xx(:,Lz));
@@ -110,11 +138,18 @@ u(Lx) =  3*u1(Lx-1)-3*u1(Lx-2)+u1(Lx-3);
 contour(aT, xdkm*xx,Hd*(Hsb.*(ZZ-1)+b),u.*Hsb.*ZZ,20,'w')
 
 % Adding legends
-legtext = legend_text_K_Pe(Ksbs,Pes);
-legend(aT, aT.Children([3 4]), {'$H_i+b$','$\psi$'}, 'FontSize',14, 'Interpreter','latex', 'NumColumns',1 ,'Position',[0.13 0.8 0.1 0.07]);
-legend(aF,legtext, 'FontSize',14, 'Interpreter','latex','Location', 'NorthOutside','NumColumns',3);
+legtext1 = legend_text_K_Pe(Ksbs,Pes);
+legtext2 = legend_text_Ss_Sigma(Sss,Sss*scales.Ss_to_Sigma);
+
+legend(aT, [pIS ppsi], {'$H_i+b$','$\psi$'}, 'FontSize',14, 'Interpreter','latex', 'NumColumns',1 ,'Position',[0.1 0.85 0.1 0.07]);
+%legend(aF,legtext, 'FontSize',14, 'Interpreter','latex','Location', 'NorthOutside','NumColumns',3);
+legend(aF1,legtext1, 'FontSize',14, 'Interpreter','latex','Location', 'NorthWest','NumColumns',3);
+legend(aF2,legtext2, 'FontSize',14, 'Interpreter','latex','Location', 'NorthWest','NumColumns',2);
+  
+
 
 text(aT,5,-2900,legend_text_K_Pe(3e-6, params.St*scales.Ksb_to_kappa*3e-6),'FontSize',14, 'Interpreter','latex');
 % Labelling subplots
 text(aT,240,500,'(a)','BackgroundColor','w','FontSize',14,'Interpreter','latex');
-text(aF,240,120,'(b)','BackgroundColor','w','FontSize',14,'Interpreter','latex');
+text(aF1,240,130,'(b)','BackgroundColor','w','FontSize',14,'Interpreter','latex');
+text(aF2,240,165,'(c)','BackgroundColor','w','FontSize',14,'Interpreter','latex');

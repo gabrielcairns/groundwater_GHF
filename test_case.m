@@ -44,7 +44,7 @@ end
 
 % Cross-section case (Figure 7) is a little different to the others
 if isequal(case_to_test,'CS')
-    params.Sigma = 0;
+   % params.Sigma = 0;
     bedf = @(x) -(1000/Hd)*sin(pi*x/.5);
     bedxf = @(x) -(pi/.4)*(1000/Hd)*cos(pi*x/.5);
     % Uniform grid
@@ -55,7 +55,9 @@ end
 
 x = xg*XH;
 
-psit = -(1/0.3)*ones(size(x)); % Just uniform, 1 m/yr
+%psict = -(1/0.3)*ones(size(x));
+psict = (1-params.xi-params.nu)*(1-params.delta) * ( -(1/0.3));
+% Uniform 1m /yr
 
 b = bedf(x); bx = bedxf(x);
 Hsb = Hsbf(x); 
@@ -67,13 +69,13 @@ Z = linspace(0,1,Lz);
 [ZZ, xx] = meshgrid(Z,x);
 
 % Hydraulic potential
-psi = (0.9*(1-delta)*Hi+b);
+psi = ((1-params.nu)*(1-delta)*Hi+b);
 
 % Inital guess is unmodified case
 Tsbi = -G.*(ZZ-b);
 
 % Nonlinear solve for Tsb
-[Tsb, ~, ex]  = fsolve(@(t) OBJ_FUN_heat_sb_SS(t,xx,ZZ,psi,zeta.*psit,G, bx, gradient(Hsb,x), Hsb,Pe_sb,0),Tsbi,options);
+[Tsb, ~, ex]  = fsolve(@(t) OBJ_FUN_heat_sb_SS(t,xx,ZZ,psi,zeta.*psict,G, bx, gradient(Hsb,x), Hsb,Pe_sb,0),Tsbi,options);
 
 % Calculate heat flux at top
 F_sb = -(Tsb(:,Lz)-Tsb(:,Lz-1))./(Hsb.*(ZZ(:,Lz)-ZZ(:,Lz-1)));

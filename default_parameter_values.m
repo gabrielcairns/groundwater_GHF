@@ -12,13 +12,13 @@ eta = 1e-3;
 
 % Densities
 rho_w = 1000;
-rho_r = 2000;
+rho_r = 2500;
 rho_i = 900;
 
 % Specific heat capacities
-C_w = 4200;
-C_r = 700;
-rhoC_sb = rho_r*C_r*(1-phi) + rho_w*C_w*phi;
+c_w = 4200;
+c_r = 700;
+rhoc_sb = rho_r*c_r*(1-phi) + rho_w*c_w*phi;
 
 % Thermal conductivity
 k_w = 0.56;
@@ -37,7 +37,8 @@ params.mW = mW;
 
 % Specific storage, Skempton coeff.
 Ss = 1e-5;
-scales.xi = 0.2;
+%params.xi = 0.2;
+params.xi = 0.8;
 
 % Seconds per year, useful for conversions
 spery = 31557600;
@@ -73,26 +74,33 @@ scales.md = md;
 scales.mdmmyr = md*1000*spery; 
 
 % 'Stefan number': = Pe_sb / kappa 
-params.St = C_w*DeltaT/L;
+params.St = c_w*DeltaT/L;
 
 % Kappa and Sigma, and some conversion factors
 % We have an additional zeta := kappa / sigma
 usbd = K_sb*Hd/xd;
 params.kappa = (Hd/xd)*usbd/md;
 scales.Ksb_to_kappa = (Hd/xd).^2/md;
-scales.Ss_to_zeta = (1-scales.xi)*xd^2/(K_sb*td);
-scales.Ss_to_Sigma = (1-scales.xi)*Hd^2/(md*td);
+% scales.Ss_to_zeta = (1-scales.xi)*xd^2/(K_sb*td);
+% scales.Ss_to_Sigma = (1-scales.xi)*Hd^2/(md*td);
+scales.Ss_to_zeta = xd^2/(K_sb*td);
+scales.Ss_to_Sigma = Hd^2/(md*td);
+
 params.Sigma = Ss*scales.Ss_to_Sigma;
 params.zeta = Ss*scales.Ss_to_zeta;
 
 % Other parameters
-params.lambda_sb = rhoC_sb*uid/(rho_w*C_w*usbd);
-params.Pe_sb = Hd^2*usbd*rho_w*C_w/(xd*k_sb);
-params.Xi_sb = g*Hd/(C_w*DeltaT);
+params.lambda_sb = rhoc_sb*uid/(rho_w*c_w*usbd);
+params.Pe_sb = Hd^2*usbd*rho_w*c_w/(xd*k_sb);
+params.Xi_sb = g*Hd/(c_w*DeltaT);
+
+params.nu = 0.1;
 
 % Bed geometry
 bedf = @(x) -100/Hd -0.2*x;
 bedxf = @(x) -0.2*ones(size(x));
 
+beta_expansion = 2e-4;
+rayleigh = K_sb * beta_expansion * DeltaT * Hd * c_w * rho_w/k_sb;
 
 end
