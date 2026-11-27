@@ -4,7 +4,7 @@ Code to accompany the manuscript "Modification of Antarctic geothermal heat flux
 This code can be used to generate all Figures apart from Figure 2 in the manuscript as follows:
 * make_antarctic_figures.m – Figures 1, 5, 6, 8, 11 and 12
 * plot_test_case.m – Figures 3, 4, 9 and 10
-* plot_CS_test_case.m – Figures 7
+* plot_CS_test_case.m – Figure 7
 
 All other scripts are auxiliary functions used in the above.
 
