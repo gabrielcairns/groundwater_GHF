@@ -9,13 +9,9 @@
                    'ListSize',[160 60]);
 if ~tf || idx==1
     case_to_test = 'default';
+    name_part = 'test_def';
 else
     case_to_test = 'alt';
-end
-
-if isequal(case_to_test,'default')
-    name_part = 'test_def';
-elseif isequal(case_to_test,'alt')
     name_part = 'test_alt';
 end
 
